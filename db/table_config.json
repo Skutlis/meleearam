@@ -1,0 +1,7 @@
+{
+    "melee_champs_table_name": "melee_champs",
+    "melee_champs_columns": {"name": "VARCHAR(50)", "is_available": "BOOLEAN"},
+    "player_table_name": "players",
+    "player_columns": {"disc_id": "VARCHAR(50)", "gamertag": "VARCHAR(50)"}
+
+}
