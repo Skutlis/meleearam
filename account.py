@@ -8,14 +8,17 @@ class riot_account:
         self.load_owned_champions()
         self.selected_champs = []
 
-        """
-        Fetch the list of champions that the user owns. 
-        """
+       
 
     def set_gamertag(self, disc_id, gamertag):
         self.gamertag = gamertag
 
     def load_owned_champions(self):
+        """
+        Fetch the list of champions that the user owns with the riot api. 
+        """
+        if self.gamertag == "admin":
+            self.owned_champs == []
         pass
 
     def select_champions(self, unavailable_champions):

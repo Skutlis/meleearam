@@ -6,7 +6,7 @@ class game_lobby():
     
     def __init__(self):
         self.lobby = []
-        self.melee_champs = pd.read_csv('melee_champs.csv')
+        self.admin = riot_account('admin')
         print(self.melee_champs.head())
         
     def add_player(self, gamertag):
