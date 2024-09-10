@@ -1,4 +1,4 @@
-from DBManager import dbManager
+from db.DBManager import dbManager
 import json
 
 
@@ -85,7 +85,7 @@ class dataHandler:
             self.melee_champs_table_name, {"name": champ}, {"is_available": True}
         )
 
-    def set_gamertag(self, disc_id, gamertag):
+    def set_player_info(self, disc_id, puuid, gamertag):
         """
         Set the gamertag of a player in the database.
         """
@@ -93,9 +93,55 @@ class dataHandler:
             self.db.update_row(
                 self.player_table_name,
                 {"disc_id": disc_id},
-                {"disc_id": disc_id, "gamertag": gamertag},
+                {"disc_id": disc_id, "puuid": puuid, "gamertag": gamertag},
             )
         else:
             self.db.add_row(
-                self.player_table_name, {"disc_id": disc_id, "gamertag": gamertag}
+                self.player_table_name,
+                {"disc_id": disc_id, "puuid": puuid, "gamertag": gamertag},
             )
+
+    def get_gamertag(self, disc_id):
+        """
+        Get the gamertag of a player from the database.
+        """
+        return self.db.get_row(self.player_table_name, {"disc_id": disc_id})[2]
+
+    def get_puuid(self, disc_id):
+        """
+        Get the puuid of a player from the database.
+        """
+        return self.db.get_row(self.player_table_name, {"disc_id": disc_id})[1]
+
+    def player_is_registered(self, disc_id):
+        """
+        Check if a player is registered in the database.
+        """
+        return self.db.exists(self.player_table_name, {"disc_id": disc_id})
+
+    def get_player_info(self, gamertag):
+        """
+        Get the puuid of a gamertag.
+        """
+        info = self.db.get_row(self.player_table_name, {"gamertag": gamertag})
+        gamertag = info[2]
+        puuid = info[1]
+        return gamertag, puuid
+
+    def update_gamertag(self, disc_id, gamertag):
+        """
+        Update the gamertag of a player in the database.
+        """
+        if self.db.exists(self.player_table_name, {"disc_id": disc_id}):
+            self.db.update_row(
+                self.player_table_name, {"disc_id": disc_id}, {"gamertag": gamertag}
+            )
+            return True
+        return False
+
+    def filter_out_banned_champs(self, champs):
+        """
+        Filter out banned champions from a list of champions.
+        """
+        banned_champs = self.get_all_available_champions()
+        return [champ for champ in champs if champ in banned_champs]

@@ -1,25 +1,32 @@
 import db.data_handler as dh
+import random
 
 
-class riot_account:
+class account:
 
-    def __init__(self, disc_id):
-        self.gamertag = disc_id
-        self.load_owned_champions()
+    def __init__(self, disc_id, gamertag, champs):
+        self.id = disc_id
+        self.game_tag = gamertag
+        self.champs = champs
+        self.num_champs = len(champs)
         self.selected_champs = []
 
-       
+    def __eq__(self, other):
+        if isinstance(other, account):
+            return self.id == other.id
+        return False
 
-    def set_gamertag(self, disc_id, gamertag):
-        self.gamertag = gamertag
-
-    def load_owned_champions(self):
+    def select_champions(self, selected_champs):
         """
-        Fetch the list of champions that the user owns with the riot api. 
+        Select 3 random champions for the player.
         """
-        if self.gamertag == "admin":
-            self.owned_champs == []
-        pass
+        self.selected_champs = []
+        champs = self.champs.copy()
+        # remove already selected champs
+        champs = [champ for champ in champs if champ not in selected_champs]
+        # randomize champs
+        random.shuffle(champs)
+        # select 3 champs
+        self.selected_champs = champs[:3]
 
-    def select_champions(self, unavailable_champions):
-        pass
+        return self.selected_champs
