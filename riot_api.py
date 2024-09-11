@@ -13,7 +13,9 @@ class Riot_Api:
         self.api_url_account = "https://europe.api.riotgames.com"
         self.api_url_mastery = "https://euw1.api.riotgames.com"
 
-        self.champ_to_id = self.get_champion_to_id()
+        status, self.champ_to_id = self.get_champion_to_id()
+        if status == False:
+            self.champ_to_id = {}
         self.champ_to_id["62"] = "Wukong"
 
     def get_champion_to_id(self):
@@ -72,15 +74,15 @@ class Riot_Api:
         return False, []
 
 
-status, champs = get_champion_to_id()  # get champions ids
-print(champs)
-status, puuid = get_puuid("Skutlis", "EUW")  # get puuid
-print(puuid)
-if status == True:
-    status, champ_ids = get_owned_champ_ids(puuid)  # get owned champions ids
+# status, champs = get_champion_to_id()  # get champions ids
+# print(champs)
+# status, puuid = get_puuid("Skutlis", "EUW")  # get puuid
+# print(puuid)
+# if status == True:
+#     status, champ_ids = get_owned_champ_ids(puuid)  # get owned champions ids
 
-    champs = [
-        champs[str(champ_id)] for champ_id in champ_ids
-    ]  # get owned champions names
+#     champs = [
+#         champs[str(champ_id)] for champ_id in champ_ids
+#     ]  # get owned champions names
 
-    print(champs)
+#     print(champs)

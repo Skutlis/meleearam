@@ -4,3 +4,5 @@ Lib/
 Include/
 Scripts/
 pyvenv.cfg
+db/MA_dbconfig.json
+db/logs

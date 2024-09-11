@@ -3,6 +3,7 @@ import pandas as pd
 from db.data_handler import dataHandler
 from riot_api import Riot_Api as ra
 import random
+from datetime import datetime
 
 
 class game_lobby:
@@ -14,17 +15,14 @@ class game_lobby:
         self.api = ra()
         self.dh = dataHandler()
 
-    def new_lobby(self):
-        self.lobby = []
-
     def register_player(self, disc_id, gamertag, tagline):
         """
         Register a player in the lobby.
         """
         status, puuid = self.api.get_puuid(gamertag, tagline)
         if status == True:
-            self.dh.set_player_info(disc_id, puuid)
-            return True
+            success = self.dh.set_player_info(disc_id, puuid, gamertag)
+            return success
         return False
 
     def add_player(self, disc_id):
@@ -62,16 +60,6 @@ class game_lobby:
             return False, unregistered_players
         return True, []
 
-    def remove_player(self, disc_id):
-        """
-        Remove a player from the lobby.
-        """
-        for player in self.lobby:
-            if player.id == disc_id:
-                self.lobby.remove(player)
-                return True
-        return False
-
     def roll_champs(self):
         """
         Roll champions for a list of players.
@@ -91,16 +79,26 @@ class game_lobby:
         for i, player in enumerate(self.lobby):
             self.team[i % 2].append(player)
 
-    def start(self, disc_ids, keep_teams=False):
+    def new_lobby(self, disc_ids):
+        """
+        Create a lobby with a list of players.
+        """
+        self.lobby = []
+        status, unreg_players = self.add_players(disc_ids)
+        if status == False:
+            return False, unreg_players
+        return True, []
+
+    def start(self, disc_ids):
         """
         Start the game.
         """
-        self.roll_champs()
-        if not keep_teams and self.team != []:
-            status, unreg_players = self.add_players(disc_ids)
+        if self.lobby == []:
+            status, unreg_players = self.new_lobby(disc_ids)
             if status == False:
                 return False, unreg_players
-            self.divide_teams()
+        self.roll_champs()
+        self.divide_teams()
 
         # Convert gameinfo to a string
         gameinfo = ""

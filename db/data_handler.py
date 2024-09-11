@@ -1,35 +1,48 @@
 from db.DBManager import dbManager
 import json
+import os
 
 
 class dataHandler:
 
     def __init__(self):
-        self.db = dbManager()
         # Load configs from file
-        with open("table_config.json", "r") as json_file:
-            configs = json.load(open("table_config.json"))
+        with open("db\\table_config.json", "r") as json_file:
+            configs = json.load(json_file)
 
         # Set the table names and columns
         self.melee_champs_table_name = configs["melee_champs_table_name"]
         self.melee_champs_columns = configs["melee_champs_columns"]
         self.player_table_name = configs["player_table_name"]
         self.player_columns = configs["player_columns"]
+        with open("db\\MA_dbconfig.json", "r") as json_file:
+            db_conf = json.load(json_file)
 
+        # Initialize the database manager
+        self.db = dbManager(db_conf)
+        self.db.setUpLogger()
+
+        tables = self.db.list_tables()
         # Set up tables if they don't exist
-        if not self.db.table_exists(self.melee_champs_table_name):
+        if not self.melee_champs_table_name in tables:
             self.db.create_table(
                 self.melee_champs_table_name,  # table name
                 ["name"],  # primary key
                 self.melee_champs_columns,  # columns
             )
 
-        if not self.db.table_exists(self.player_table_name):
+        if not self.player_table_name in tables:
             self.db.create_table(
                 self.player_table_name,  # table name
                 ["disc_id"],  # primary key
                 self.player_columns,  # columns
             )
+
+    def format_text_field(self, text):
+        """
+        Format a text field for the database.
+        """
+        return "'" + text + "'"
 
     def get_all_champions(self):
         """
@@ -65,6 +78,7 @@ class dataHandler:
         """
         Add a champion to the database.
         """
+        champ = self.format_text_field(champ)
         self.db.add_row(
             self.melee_champs_table_name, {"name": champ, "is_available": is_available}
         )
@@ -73,6 +87,7 @@ class dataHandler:
         """
         Ban a champion from the database.
         """
+        champ = self.format_text_field(champ)
         self.db.update_row(
             self.melee_champs_table_name, {"name": champ}, {"is_available": False}
         )
@@ -81,6 +96,8 @@ class dataHandler:
         """
         Unban a champion from the database.
         """
+        champ = self.format_text_field(champ)
+        champs = self.get_all_champions()
         self.db.update_row(
             self.melee_champs_table_name, {"name": champ}, {"is_available": True}
         )
@@ -89,40 +106,53 @@ class dataHandler:
         """
         Set the gamertag of a player in the database.
         """
+        # disc_id = self.format_text_field(disc_id)
+        puuid = self.format_text_field(puuid)
+        gamertag = self.format_text_field(gamertag)
+
+        print(type(disc_id))
+        print(disc_id)
+        success = False
         if self.db.exists(self.player_table_name, {"disc_id": disc_id}):
-            self.db.update_row(
+            success = self.db.update_row(
                 self.player_table_name,
                 {"disc_id": disc_id},
                 {"disc_id": disc_id, "puuid": puuid, "gamertag": gamertag},
             )
         else:
-            self.db.add_row(
+            success = self.db.add_row(
                 self.player_table_name,
                 {"disc_id": disc_id, "puuid": puuid, "gamertag": gamertag},
             )
+
+        return success
 
     def get_gamertag(self, disc_id):
         """
         Get the gamertag of a player from the database.
         """
+        # disc_id = self.format_text_field(disc_id)
         return self.db.get_row(self.player_table_name, {"disc_id": disc_id})[2]
 
     def get_puuid(self, disc_id):
         """
         Get the puuid of a player from the database.
         """
+        # disc_id = self.format_text_field(disc_id)
         return self.db.get_row(self.player_table_name, {"disc_id": disc_id})[1]
 
     def player_is_registered(self, disc_id):
         """
         Check if a player is registered in the database.
         """
+        # disc_id = self.format_text_field(disc_id)
         return self.db.exists(self.player_table_name, {"disc_id": disc_id})
 
     def get_player_info(self, gamertag):
         """
         Get the puuid of a gamertag.
         """
+        gamertag = self.format_text_field(gamertag)
         info = self.db.get_row(self.player_table_name, {"gamertag": gamertag})
         gamertag = info[2]
         puuid = info[1]
@@ -132,6 +162,8 @@ class dataHandler:
         """
         Update the gamertag of a player in the database.
         """
+        # disc_id = self.format_text_field(disc_id)
+        gamertag = self.format_text_field(gamertag)
         if self.db.exists(self.player_table_name, {"disc_id": disc_id}):
             self.db.update_row(
                 self.player_table_name, {"disc_id": disc_id}, {"gamertag": gamertag}

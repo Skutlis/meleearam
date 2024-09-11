@@ -10,6 +10,7 @@ class dbManager:
         self.isOpen = False
 
         self.logger = None
+        self.open()
 
     def open(self):
         if self.isOpen:
@@ -31,7 +32,7 @@ class dbManager:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
-        file_handler = logging.FileHandler("logs/dbManager.log")
+        file_handler = logging.FileHandler("db/logs/dbManager.log")
         file_handler.setLevel(logging.INFO)
 
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
@@ -112,6 +113,7 @@ class dbManager:
             columns = ", ".join(data.keys())
             values = ", ".join(data.values())
             query = f"INSERT INTO {table_name} ({columns}) VALUES ({values});"
+            print(query)
             self.cursor.execute(query, list(data.values()))
             self.conn.commit()
             self.logger.info(f"{self.loggerStamp}: Row inserted successfully.")
@@ -359,12 +361,14 @@ class dbManager:
             self.logger.info(
                 f"{self.loggerStamp}: Column '{column_name}' updated successfully."
             )
+            return True
 
         except Exception as e:
             self.conn.rollback()
             self.logger.error(
                 f"{self.loggerStamp}: Error updating column '{column_name}' in table '{table_name}': {str(e)}"
             )
+            return False
 
     def update_row(self, table_name, criteria, new_values):
 

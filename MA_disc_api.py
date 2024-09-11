@@ -4,26 +4,40 @@ from lobby import game_lobby
 import dotenv
 import os
 
+dotenv.load_dotenv()
+
+disc_token = os.getenv("DISCORD_BOT_TOKEN")
+channel_id = int(os.getenv("DISCORD_CHANNEL_ID"))
+
 intents = discord.Intents.default()
 intents.members = True  # Required to access the list of members in a channel
 intents.voice_states = True  # Required to get voice channel info
+intents.message_content = True
 
 # Set up the bot
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 lobby = game_lobby()
 
+print("Bot is running")
+
+
+@bot.check
+async def globally_check_channel(ctx):
+    return ctx.channel.id == channel_id
+
 
 # Example: Register a player with a gametag and store it in a database
 @bot.command(name="reg")
-async def register_player(ctx, gametag: str, tagline: str):
+async def register_player(ctx, gametag, tagline):
     discord_id = (
         ctx.author.id
     )  # Get the Discord ID of the person who executed the command
+    discord_id = str(discord_id)
 
     # Call your existing logic to register the player in the database
     success = lobby.register_player(
-        discord_id, gametag
+        discord_id, gametag, tagline
     )  # Example function from your data_handler
 
     if success:
@@ -51,7 +65,7 @@ async def start_game(ctx):
         await ctx.send("No other members in the voice channel.")
         return
 
-    discord_ids = [member.id for member in members]  # Collect all Discord IDs
+    discord_ids = [str(member.id) for member in members]  # Collect all Discord IDs
     status, gameinfo = lobby.start(discord_ids)
     if status == True:
 
@@ -60,13 +74,10 @@ async def start_game(ctx):
     else:
         msg = "Not all players are registerd. Unregistered players: \n"
         for id in gameinfo:
-            user = await bot.fetch_user(id)
+            d_id = int(id)
+            user = await bot.fetch_user(d_id)
             msg += f"{user.name} \n"
         await ctx.send(msg)
 
 
-dotenv.load_dotenv()
-
-bot_token = os.getenv("DISCORD_BOT_TOKEN")
-
-bot.run(bot_token)
+bot.run(disc_token)
