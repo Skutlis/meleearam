@@ -70,6 +70,7 @@ class Riot_Api:
             for mastery in masteries:
                 champ_ids.append(mastery["championId"])
             champs = [self.champ_to_id[str(champ_id)] for champ_id in champ_ids]
+            champs = [champ.replace("'", "") for champ in champs]
             return True, champs
         return False, []
 

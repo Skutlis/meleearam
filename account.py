@@ -6,7 +6,7 @@ class account:
 
     def __init__(self, disc_id, gamertag, champs):
         self.id = disc_id
-        self.game_tag = gamertag
+        self.gamertag = gamertag
         self.champs = champs
         self.num_champs = len(champs)
         self.selected_champs = []
@@ -21,6 +21,7 @@ class account:
         Select 3 random champions for the player.
         """
         self.selected_champs = []
+
         champs = self.champs.copy()
         # remove already selected champs
         champs = [champ for champ in champs if champ not in selected_champs]

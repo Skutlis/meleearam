@@ -56,9 +56,9 @@ class dataHandler:
         """
         available_champs = []
         all_champs = self.get_all_champions()
-        for champ in all_champs:
-            if champ[1] == "True":
-                available_champs.append(champ[0])
+        for champ, availability in all_champs:
+            if availability:
+                available_champs.append(champ)
 
         return available_champs
 
@@ -68,13 +68,28 @@ class dataHandler:
         """
         banned_champs = []
         all_champs = self.get_all_champions()
-        for champ in all_champs:
-            if champ[1] == "False":
-                banned_champs.append(champ[0])
+        for champ, availability in all_champs:
+            if not availability:
+                banned_champs.append(champ)
 
         return banned_champs
 
-    def add_champ(self, champ, is_available=True):
+    def find_champ(self, champ):
+        """
+        Find a champion in the database.
+        """
+        champ_l = champ.lower()
+        champs = [row[0] for row in self.db.list_rows(self.melee_champs_table_name)]
+        for c in champs:
+            if champ_l in c.split(" ")[0].lower():
+                return c
+
+            elif champ_l in c.lower():
+                return c
+
+        return champ
+
+    def add_champ(self, champ, is_available="True"):
         """
         Add a champion to the database.
         """
@@ -87,8 +102,9 @@ class dataHandler:
         """
         Ban a champion from the database.
         """
+        champ = self.find_champ(champ)
         champ = self.format_text_field(champ)
-        self.db.update_row(
+        return self.db.update_row(
             self.melee_champs_table_name, {"name": champ}, {"is_available": False}
         )
 
@@ -96,9 +112,9 @@ class dataHandler:
         """
         Unban a champion from the database.
         """
+        champ = self.find_champ(champ)
         champ = self.format_text_field(champ)
-        champs = self.get_all_champions()
-        self.db.update_row(
+        return self.db.update_row(
             self.melee_champs_table_name, {"name": champ}, {"is_available": True}
         )
 
@@ -110,8 +126,6 @@ class dataHandler:
         puuid = self.format_text_field(puuid)
         gamertag = self.format_text_field(gamertag)
 
-        print(type(disc_id))
-        print(disc_id)
         success = False
         if self.db.exists(self.player_table_name, {"disc_id": disc_id}):
             success = self.db.update_row(
@@ -175,5 +189,5 @@ class dataHandler:
         """
         Filter out banned champions from a list of champions.
         """
-        banned_champs = self.get_all_available_champions()
-        return [champ for champ in champs if champ in banned_champs]
+        available_champs = self.get_all_available_champions()
+        return [champ for champ in champs if champ in available_champs]
