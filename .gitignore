@@ -6,3 +6,5 @@ Scripts/
 pyvenv.cfg
 db/MA_dbconfig.json
 db/logs
+t.py
+test.py

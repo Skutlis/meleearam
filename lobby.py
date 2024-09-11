@@ -62,6 +62,12 @@ class game_lobby:
             return False, unregistered_players
         return True, []
 
+    def get_players(self):
+        """
+        Get the players in the lobby.
+        """
+        return [player.gamertag for player in self.lobby]
+
     def roll_champs(self):
         """
         Roll champions for a list of players.
