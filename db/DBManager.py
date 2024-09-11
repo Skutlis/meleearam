@@ -382,12 +382,14 @@ class dbManager:
             self.cursor.execute(query)
             self.conn.commit()
             self.logger.info(f"{self.loggerStamp}: Row updated successfully.")
+            return True
 
         except Exception as e:
             self.conn.rollback()
             self.logger.error(
                 f"{self.loggerStamp}: Error updating row in table '{table_name}': {str(e)}"
             )
+            return False
 
     def __del__(self):
         self.close()

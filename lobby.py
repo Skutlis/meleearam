@@ -37,6 +37,8 @@ class game_lobby:
             status, champs = self.api.get_champs(
                 puuid
             )  # Get all champs that the player has played
+            if status == False:
+                return False
             champs = self.dh.filter_out_banned_champs(
                 champs
             )  # Filter out banned champs
@@ -93,20 +95,44 @@ class game_lobby:
         """
         Start the game.
         """
-        if self.lobby == []:
-            status, unreg_players = self.new_lobby(disc_ids)
-            if status == False:
-                return False, unreg_players
+        status, unreg_players = self.new_lobby(disc_ids)
+        if status == False:
+            return False, unreg_players
         self.roll_champs()
         self.divide_teams()
 
         # Convert gameinfo to a string
         gameinfo = ""
         for i, team in enumerate(self.team):
+
             gameinfo += f"Team {i+1}: " + "\n"
             for player in team:
                 gameinfo += (
-                    f"{player.gamertag}:" + ", ".join(player.selected_champs) + "\n"
+                    f"{player.gamertag}: " + ", ".join(player.selected_champs) + "\n"
                 )
 
         return True, gameinfo
+
+    def get_lobby(self):
+        """
+        Get the lobby.
+        """
+        return [player.gamertag for player in self.lobby]
+
+    def ban_champ(self, champ):
+        """
+        Ban a champion from the game.
+        """
+        return self.dh.ban_champ(champ)
+
+    def unban_champ(self, champ):
+        """
+        Unban a champion from the game.
+        """
+        return self.dh.unban_champ(champ)
+
+    def list_banned_champs(self):
+        """
+        List all banned champions.
+        """
+        return self.dh.get_banned_champs()

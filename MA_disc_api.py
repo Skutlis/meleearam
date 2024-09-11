@@ -66,6 +66,7 @@ async def start_game(ctx):
         return
 
     discord_ids = [str(member.id) for member in members]  # Collect all Discord IDs
+    print(discord_ids)
     status, gameinfo = lobby.start(discord_ids)
     if status == True:
 
@@ -78,6 +79,65 @@ async def start_game(ctx):
             user = await bot.fetch_user(d_id)
             msg += f"{user.name} \n"
         await ctx.send(msg)
+
+
+@bot.command(name="r")
+async def reset_lobby(ctx):
+    lobby.reset()
+    await ctx.send("Lobby has been reset.")
+
+
+@bot.command(name="l")
+async def list_lobby(ctx):
+    players = lobby.get_players()
+    if players:
+        player_list = "\n".join(players)
+        await ctx.send(f"Players in the lobby:\n{player_list}")
+    else:
+        await ctx.send("No players in the lobby.")
+
+
+@bot.command(name="b")
+async def ban_champ(ctx, champ):
+    success = lobby.ban_champ(champ)
+    if success:
+        await ctx.send(f"{champ} has been banned.")
+    else:
+        await ctx.send(f"{champ} is already banned.")
+
+
+@bot.command(name="ub")
+async def unban_champ(ctx, champ):
+    success = lobby.unban_champ(champ)
+    if success:
+        await ctx.send(f"{champ} has been unbanned.")
+    else:
+        await ctx.send(f"{champ} is not banned.")
+
+
+@bot.command(name="lb")
+async def list_banned_champs(ctx):
+    banned_champs = lobby.list_banned_champs()
+    if banned_champs:
+        champ_list = "\n".join(banned_champs)
+        await ctx.send(f"Banned champions:\n{champ_list}")
+    else:
+        await ctx.send("No champions are banned.")
+
+
+@bot.command(name="ac")
+async def available_commands(ctx):
+    commands = [
+        "!reg <gamertag> <tagline>: Register a player with a gamertag.",
+        "!start: Start a game with all members in the voice channel.",
+        "!r: Reset the lobby.",
+        "!l: List all players in the lobby.",
+        "!b <champ>: Ban a champion from the game.",
+        "!ub <champ>: Unban a champion from the game.",
+        "!lb: List all banned champions.",
+    ]
+    command_list = "\n".join(commands)
+    await ctx.send(f"Available commands:\n{command_list}")
 
 
 bot.run(disc_token)
