@@ -1,6 +1,6 @@
 from db.DBManager import dbManager
 import json
-import os
+import pandas as pd
 
 
 class dataHandler:
@@ -30,6 +30,7 @@ class dataHandler:
                 ["name"],  # primary key
                 self.melee_champs_columns,  # columns
             )
+            self.fill_champions_table()
 
         if not self.player_table_name in tables:
             self.db.create_table(
@@ -37,6 +38,16 @@ class dataHandler:
                 ["disc_id"],  # primary key
                 self.player_columns,  # columns
             )
+
+    def fill_champions_table(self):
+        m = pd.read_csv("melee_champs.csv")
+
+        champs = m["Champion"].tolist()
+
+        for champ in champs:
+            if "'" in champ:
+                champ = champ.replace("'", " ")
+            self.add_champ(champ)
 
     def format_text_field(self, text):
         """

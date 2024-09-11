@@ -66,7 +66,6 @@ async def start_game(ctx):
         return
 
     discord_ids = [str(member.id) for member in members]  # Collect all Discord IDs
-    print(discord_ids)
     status, gameinfo = lobby.start(discord_ids)
     if status == True:
 
@@ -87,7 +86,7 @@ async def reset_lobby(ctx):
     await ctx.send("Lobby has been reset.")
 
 
-@bot.command(name="l")
+@bot.command(name="list")
 async def list_lobby(ctx):
     players = lobby.get_players()
     if players:
@@ -125,7 +124,7 @@ async def list_banned_champs(ctx):
         await ctx.send("No champions are banned.")
 
 
-@bot.command(name="ac")
+@bot.command(name="lc")
 async def available_commands(ctx):
     commands = [
         "!reg <gamertag> <tagline>: Register a player with a gamertag.",
