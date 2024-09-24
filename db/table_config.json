@@ -1,6 +1,6 @@
 {
-    "melee_champs_table_name": "melee_champs",
-    "melee_champs_columns": {"name": "VARCHAR(50)", "is_available": "BOOLEAN"},
+    "melee_champs_table_name": "champs",
+    "melee_champs_columns": {"name": "VARCHAR(50)", "is_available": "BOOLEAN", "attack": "VARCHAR(7)", "tag": "VARCHAR(50)"},
     "player_table_name": "players",
     "player_columns": {"disc_id": "BIGINT", "puuid": "VARCHAR(100)", "gamertag": "VARCHAR(50)"}
 }

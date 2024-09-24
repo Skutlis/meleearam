@@ -16,13 +16,15 @@ class account:
             return self.id == other.id
         return False
 
-    def select_champions(self, selected_champs):
+    def select_champions(self, selected_champs, available_champs):
         """
         Select 3 random champions for the player.
         """
         self.selected_champs = []
 
         champs = self.champs.copy()
+        # remove champs that are not available
+        champs = [champ for champ in champs if champ in available_champs]
         # remove already selected champs
         champs = [champ for champ in champs if champ not in selected_champs]
         # randomize champs

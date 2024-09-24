@@ -2,10 +2,19 @@ from db.DBManager import dbManager
 import json
 import pandas as pd
 
+import sys
+import os
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.append(parent_dir)
+        
+from riot_api import Riot_Api
+
 
 class dataHandler:
 
     def __init__(self):
+        self.riot_api = Riot_Api() #Init the riot api
         # Load configs from file
         with open("db\\table_config.json", "r") as json_file:
             configs = json.load(json_file)
@@ -39,15 +48,46 @@ class dataHandler:
                 self.player_columns,  # columns
             )
 
+        
+
     def fill_champions_table(self):
-        m = pd.read_csv("melee_champs.csv")
 
-        champs = m["Champion"].tolist()
+        # Get the tag for each champion
+        champ_info = self.riot_api.champion_info
+        champ_tag = {}
+        for champ in champ_info.keys():
+            tags = champ_info[champ]["tags"]
+            champ_tag[champ_info[champ]["name"]] = tags
+        
+        print(champ_tag)
+        # Get the melee champions
+        melee = pd.read_csv("db\\melee_champs.csv")
+        melee_list = melee["Champion"].tolist()
+        melee_list = [champ.lower() for champ in melee_list]
+        
 
-        for champ in champs:
-            if "'" in champ:
-                champ = champ.replace("'", " ")
-            self.add_champ(champ)
+        database_data_list = []
+        
+        for champ in champ_tag.keys():
+            
+            champion_data_dict = {}
+
+            #Asssign attack type
+            attack = "ranged"
+            if champ.lower() in melee_list or champ.lower().split(" ")[0] in melee_list:
+                attack = "melee"
+
+     
+
+            champion_data_dict["name"] = self.format_text_field(champ.replace("'", " "))
+            champion_data_dict["attack"] = self.format_text_field(attack)
+            champion_data_dict["tag"] = self.format_text_field(" ".join(champ_tag[champ]))
+            champion_data_dict["is_available"] = "True"
+            database_data_list.append(champion_data_dict)
+
+        for champ_data in database_data_list:
+            self.add_champ(champ_data)
+        
 
     def format_text_field(self, text):
         """
@@ -55,7 +95,7 @@ class dataHandler:
         """
         return "'" + text + "'"
 
-    def get_all_champions(self):
+    def list_champion_database(self):
         """
         Get all champions from the database.
         """
@@ -66,10 +106,10 @@ class dataHandler:
         Get all champions that are not banned
         """
         available_champs = []
-        all_champs = self.get_all_champions()
-        for champ, availability in all_champs:
-            if availability:
-                available_champs.append(champ)
+        all_champs = self.list_champion_database()
+        for champ_data in all_champs:
+            if champ_data[2]:
+                available_champs.append(champ_data[0])
 
         return available_champs
 
@@ -78,10 +118,10 @@ class dataHandler:
         Get all champions that are banned.
         """
         banned_champs = []
-        all_champs = self.get_all_champions()
-        for champ, availability in all_champs:
-            if not availability:
-                banned_champs.append(champ)
+        all_champs = self.list_champion_database()
+        for champ_info in all_champs:
+            if not champ_info[1]:
+                banned_champs.append(champ_info[0])
 
         return banned_champs
 
@@ -100,13 +140,12 @@ class dataHandler:
 
         return champ
 
-    def add_champ(self, champ, is_available="True"):
+    def add_champ(self, champ_info_dict):
         """
         Add a champion to the database.
         """
-        champ = self.format_text_field(champ)
         self.db.add_row(
-            self.melee_champs_table_name, {"name": champ, "is_available": is_available}
+            self.melee_champs_table_name, champ_info_dict
         )
 
     def ban_champ(self, champ):
@@ -157,14 +196,14 @@ class dataHandler:
         Get the gamertag of a player from the database.
         """
         # disc_id = self.format_text_field(disc_id)
-        return self.db.get_row(self.player_table_name, {"disc_id": disc_id})[2]
+        return self.db.get_rows_by_criteria(self.player_table_name, {"disc_id": disc_id})[2]
 
     def get_puuid(self, disc_id):
         """
         Get the puuid of a player from the database.
         """
         # disc_id = self.format_text_field(disc_id)
-        return self.db.get_row(self.player_table_name, {"disc_id": disc_id})[1]
+        return self.db.get_rows_by_criteria(self.player_table_name, {"disc_id": disc_id})[1]
 
     def player_is_registered(self, disc_id):
         """
@@ -178,7 +217,7 @@ class dataHandler:
         Get the puuid of a gamertag.
         """
         gamertag = self.format_text_field(gamertag)
-        info = self.db.get_row(self.player_table_name, {"gamertag": gamertag})
+        info = self.db.get_rows_by_criteria(self.player_table_name, {"gamertag": gamertag})
         gamertag = info[2]
         puuid = info[1]
         return gamertag, puuid
@@ -202,3 +241,49 @@ class dataHandler:
         """
         available_champs = self.get_all_available_champions()
         return [champ for champ in champs if champ in available_champs]
+
+    def register_player(self, gamertag, tagline, disc_id):
+        """
+        Register a player in the database.
+        """
+        status, puuid = self.riot_api.get_puuid(gamertag, tagline)
+        if status == True:
+            success = self.set_player_info(disc_id, puuid, gamertag)
+            return success
+        return False
+            
+    def get_champs_with_mastery(self, disc_id):
+        
+        puuid = self.get_puuid(disc_id)  # Get puuid from riot account
+        
+        status, champs = self.riot_api.get_champs(
+            puuid
+        )  # Get all champs that the player has played (has mastery points on)
+
+        return status, champs
+
+
+    def get_champs_for_gamemode(self, gamemode):
+        """
+        Get all available champions for a gamemode.
+        """
+        gamemode = gamemode.lower()
+        champs = self.list_champion_database()
+
+        if gamemode == "melee":
+            return self.filter_out_banned_champs([champ[0] for champ in champs if champ[2] == "melee"])
+        elif gamemode == "ranged":
+            return self.filter_out_banned_champs([champ[0] for champ in champs if champ[2] == "ranged"])
+        elif gamemode == "support":
+            return self.filter_out_banned_champs([champ[0] for champ in champs if "Support" in champ[3].split(" ")])
+        elif gamemode == "tank":
+            return self.filter_out_banned_champs([champ[0] for champ in champs if "Tank" in champ[3].split(" ")])
+        elif gamemode == "mage":
+            return self.filter_out_banned_champs([champ[0] for champ in champs if "Mage" in champ[3].split(" ")])
+        elif gamemode == "assassin":
+            return self.filter_out_banned_champs([champ[0] for champ in champs if "Assassin" in champ[3].split(" ")])
+        elif gamemode == "fighter":
+            return self.filter_out_banned_champs([champ[0] for champ in champs if "Fighter" in champ[3].split(" ")])
+        elif gamemode == "marksman":
+            return self.filter_out_banned_champs([champ[0] for champ in champs if "Marksman" in champ[3].split(" ")])
+        return []

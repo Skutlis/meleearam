@@ -21,6 +21,7 @@ lobby = game_lobby()
 
 print("Bot is running")
 
+available_gamemodes = ["melee", "ranged", "fighter", "mage", "assassin", "marksman", "tank", "support"]
 
 @bot.check
 async def globally_check_channel(ctx):
@@ -50,7 +51,11 @@ async def register_player(ctx, gametag, tagline):
 
 # Example: Start a game and collect all members from the same voice channel
 @bot.command(name="start")
-async def start_game(ctx):
+async def start_game(ctx, gamemode = "melee"):
+    gamemode = gamemode.lower() 
+    if gamemode not in available_gamemodes:
+        await ctx.send(f"Gamemode {gamemode} is not available. Available gamemodes: {available_gamemodes}")
+        return
     # Get the voice channel of the command author
     voice_state = ctx.author.voice  # Check if the author is in a voice channel
 
@@ -66,7 +71,7 @@ async def start_game(ctx):
         return
 
     discord_ids = [str(member.id) for member in members]  # Collect all Discord IDs
-    status, gameinfo = lobby.start(discord_ids)
+    status, gameinfo = lobby.start(discord_ids, gamemode)
     if status == True:
 
         # Send a message back with the IDs of all players in the voice channel
@@ -79,21 +84,6 @@ async def start_game(ctx):
             msg += f"{user.name} \n"
         await ctx.send(msg)
 
-
-@bot.command(name="r")
-async def reset_lobby(ctx):
-    lobby.reset()
-    await ctx.send("Lobby has been reset.")
-
-
-@bot.command(name="list")
-async def list_lobby(ctx):
-    players = lobby.get_players()
-    if players:
-        player_list = "\n".join(players)
-        await ctx.send(f"Players in the lobby:\n{player_list}")
-    else:
-        await ctx.send("No players in the lobby.")
 
 
 @bot.command(name="b")
@@ -123,20 +113,35 @@ async def list_banned_champs(ctx):
     else:
         await ctx.send("No champions are banned.")
 
+@bot.command(name="modes")
+async def list_gamemodes(ctx):
+    modes = ", ".join(available_gamemodes)
+    await ctx.send(f"Available gamemodes: {modes}")
 
-@bot.command(name="lc")
+
+@bot.command(name="commands")
 async def available_commands(ctx):
     commands = [
-        "!reg <gamertag> <tagline>: Register a player with a gamertag.",
-        "!start: Start a game with all members in the voice channel.",
-        "!r: Reset the lobby.",
-        "!l: List all players in the lobby.",
-        "!b <champ>: Ban a champion from the game.",
-        "!ub <champ>: Unban a champion from the game.",
+        "!reg <gamertag> <tagline>: Register a player with a gamertag. Ex: !reg Skutlis EUW",
+        "!start <gamemode>: Start a game with all members in the voice channel (default = melee). Ex: !start support",
+        "!modes: List all available gamemodes.",
+        "!lc <gamemode>: List all champions available for a specific gamemode. Ex: !lc support",
+        "!b <champ>: Ban a champion from the game. Ex: !b Teemo",
+        "!ub <champ>: Unban a champion from the game. Ex: !ub Teemo",
         "!lb: List all banned champions.",
     ]
     command_list = "\n".join(commands)
     await ctx.send(f"Available commands:\n{command_list}")
+
+
+@bot.command(name="lc")
+async def list_champs(ctx, gamemode = "melee"):
+    champs = lobby.get_champs_for_gamemode(gamemode)
+    if champs:
+        champ_list = "\n".join(champs)
+        await ctx.send(f"Champions available for {gamemode}:\n{champ_list}")
+    else:
+        await ctx.send("No champions available for this gamemode.")
 
 
 bot.run(disc_token)
