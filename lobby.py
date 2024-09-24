@@ -1,7 +1,6 @@
 from account import account
 import pandas as pd
 from db.data_handler import dataHandler
-from riot_api import Riot_Api as ra
 import random
 from datetime import datetime
 
@@ -12,18 +11,13 @@ class game_lobby:
         self.lobby = []
         self.team = []
 
-        self.api = ra()
         self.dh = dataHandler()
 
     def register_player(self, disc_id, gamertag, tagline):
         """
         Register a player in the lobby.
         """
-        status, puuid = self.api.get_puuid(gamertag, tagline)
-        if status == True:
-            success = self.dh.set_player_info(disc_id, puuid, gamertag)
-            return success
-        return False
+        return self.dh.register_player(gamertag, tagline, disc_id)
 
     def add_player(self, disc_id):
         """
@@ -32,20 +26,20 @@ class game_lobby:
         if self.dh.player_is_registered(disc_id):
             if account(disc_id, "", []) in self.lobby:
                 return True
-            puuid = self.dh.get_puuid(disc_id)  # Get puuid from riot account
-            gamertag = self.dh.get_gamertag(disc_id)  # Get gamertag from riot account
-            status, champs = self.api.get_champs(
-                puuid
-            )  # Get all champs that the player has played
-            if status == False:
+            
+            #Get all champions that an account has mastery points on
+            status, champs = self.dh.get_champs_with_mastery(disc_id)
+            
+            if status == False: #An error has occured
                 return False
-            champs = self.dh.filter_out_banned_champs(
-                champs
-            )  # Filter out banned champs
-            if status == True:
-                acc = account(disc_id, gamertag, champs)
-                self.lobby.append(acc)
-                return True
+            
+            
+            #Add player
+            gamertag = self.dh.get_gamertag(disc_id)  # Get gamertag from riot account
+            acc = account(disc_id, gamertag, champs)
+            self.lobby.append(acc)
+            return True
+        
         return False
 
     def add_players(self, players: list):
@@ -68,15 +62,16 @@ class game_lobby:
         """
         return [player.gamertag for player in self.lobby]
 
-    def roll_champs(self):
+    def roll_champs(self, gamemode):
         """
         Roll champions for a list of players.
         """
         # Sort players on number of champions
         self.lobby.sort(key=lambda x: x.num_champs)
+        available_champs = self.dh.get_champs_for_gamemode(gamemode)
         selected_champs = []
         for player in self.lobby:
-            selected_champs += player.select_champions(selected_champs)
+            selected_champs += player.select_champions(selected_champs, available_champs)
 
     def divide_teams(self):
         """
@@ -97,14 +92,14 @@ class game_lobby:
             return False, unreg_players
         return True, []
 
-    def start(self, disc_ids):
+    def start(self, disc_ids, gamemode):
         """
         Start the game.
         """
         status, unreg_players = self.new_lobby(disc_ids)
         if status == False:
             return False, unreg_players
-        self.roll_champs()
+        self.roll_champs(gamemode)
         self.divide_teams()
 
         # Convert gameinfo to a string
@@ -142,3 +137,10 @@ class game_lobby:
         List all banned champions.
         """
         return self.dh.get_banned_champs()
+
+    def get_champs_for_gamemode(self, gamemode):
+        """
+        Get all champions for a specific gamemode.
+        """
+        return self.dh.get_champs_for_gamemode(gamemode)
+

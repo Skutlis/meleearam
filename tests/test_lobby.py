@@ -39,6 +39,12 @@ class TestLobby(unittest.TestCase):
         status, players = self.lobby.add_players([1, 2, 3])
         self.assertFalse(status)
 
+    def test_start_does_not_start_if_not_all_player_registered(self):
+        self.lobby.add_player = Mock(return_value=(False, [1, 2, 3]))
+        print(self.lobby.start([1, 2, 3]))
+        status, _ = self.assertTrue(self.lobby.start([1, 2, 3]))
+        self.assertFalse(status)
+
 
 if __name__ == "__main__":
     unittest.main()

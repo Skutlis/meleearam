@@ -166,7 +166,7 @@ class dbManager:
 
             return False
 
-    def get_row(self, table_name, criteria):
+    def get_rows_by_criteria(self, table_name, criteria):
 
         try:
             column_names = criteria.keys()
@@ -390,7 +390,3 @@ class dbManager:
                 f"{self.loggerStamp}: Error updating row in table '{table_name}': {str(e)}"
             )
             return False
-
-    def __del__(self):
-        self.close()
-        self.logger.info(f"{self.loggerStamp}: DBManager object deleted.")

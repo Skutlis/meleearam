@@ -13,12 +13,17 @@ class Riot_Api:
         self.api_url_account = "https://europe.api.riotgames.com"
         self.api_url_mastery = "https://euw1.api.riotgames.com"
 
+        self.load_champ_info()
         status, self.champ_to_id = self.get_champion_to_id()
         if status == False:
             self.champ_to_id = {}
         self.champ_to_id["62"] = "Wukong"
 
-    def get_champion_to_id(self):
+    
+    def load_champ_info(self):
+        """
+        Load the champion info from the ddragon api.
+        """
         req = requests.get("https://ddragon.leagueoflegends.com/api/versions.json")
         if req.status_code != 200:
             return False, {}
@@ -27,16 +32,22 @@ class Riot_Api:
             f"https://ddragon.leagueoflegends.com/cdn/{latest}/data/en_US/champion.json"
         )
         if ddragon.status_code != 200:
+            return
+        self.champion_info = ddragon.json()["data"]
+        
+
+    def get_champion_to_id(self):
+        """
+        Create a dictionary that maps the champion name to the champion id.
+        """
+        if not self.champion_info:
             return False, {}
-        champion_dict = ddragon.json()["data"]
         champ_to_id = {}
-        for key in champion_dict.keys():
-            champ_to_id[champion_dict[key]["key"]] = champion_dict[key]["id"]
+        for key in self.champion_info.keys():
+            champ_to_id[self.champion_info[key]["key"]] = self.champion_info[key]["id"]
 
         return True, champ_to_id
 
-    def get_account_info(self, gamertag):
-        req = requests.get("http://localhost:5000/")
 
     def get_puuid(self, gamertag, tagLine):
         """
@@ -75,15 +86,3 @@ class Riot_Api:
         return False, []
 
 
-# status, champs = get_champion_to_id()  # get champions ids
-# print(champs)
-# status, puuid = get_puuid("Skutlis", "EUW")  # get puuid
-# print(puuid)
-# if status == True:
-#     status, champ_ids = get_owned_champ_ids(puuid)  # get owned champions ids
-
-#     champs = [
-#         champs[str(champ_id)] for champ_id in champ_ids
-#     ]  # get owned champions names
-
-#     print(champs)
