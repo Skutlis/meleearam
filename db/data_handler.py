@@ -24,11 +24,9 @@ class dataHandler:
         self.melee_champs_columns = configs["melee_champs_columns"]
         self.player_table_name = configs["player_table_name"]
         self.player_columns = configs["player_columns"]
-        with open("db\\MA_dbconfig.json", "r") as json_file:
-            db_conf = json.load(json_file)
 
         # Initialize the database manager
-        self.db = dbManager(db_conf)
+        self.db = dbManager()
         self.db.setUpLogger()
 
         tables = self.db.list_tables()
@@ -172,7 +170,6 @@ class dataHandler:
         """
         Set the gamertag of a player in the database.
         """
-        # disc_id = self.format_text_field(disc_id)
         puuid = self.format_text_field(puuid)
         gamertag = self.format_text_field(gamertag)
 
@@ -195,21 +192,18 @@ class dataHandler:
         """
         Get the gamertag of a player from the database.
         """
-        # disc_id = self.format_text_field(disc_id)
         return self.db.get_rows_by_criteria(self.player_table_name, {"disc_id": disc_id})[2]
 
     def get_puuid(self, disc_id):
         """
         Get the puuid of a player from the database.
         """
-        # disc_id = self.format_text_field(disc_id)
         return self.db.get_rows_by_criteria(self.player_table_name, {"disc_id": disc_id})[1]
 
     def player_is_registered(self, disc_id):
         """
         Check if a player is registered in the database.
         """
-        # disc_id = self.format_text_field(disc_id)
         return self.db.exists(self.player_table_name, {"disc_id": disc_id})
 
     def get_player_info(self, gamertag):
@@ -226,13 +220,12 @@ class dataHandler:
         """
         Update the gamertag of a player in the database.
         """
-        # disc_id = self.format_text_field(disc_id)
         gamertag = self.format_text_field(gamertag)
         if self.db.exists(self.player_table_name, {"disc_id": disc_id}):
-            self.db.update_row(
+            return self.db.update_row(
                 self.player_table_name, {"disc_id": disc_id}, {"gamertag": gamertag}
             )
-            return True
+            
         return False
 
     def filter_out_banned_champs(self, champs):

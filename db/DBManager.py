@@ -1,12 +1,13 @@
 import psycopg2
-from psycopg2 import IntegrityError
+from psycopg2 import IntegrityError, pool
 import logging
-
+from dotenv import load_dotenv
+import os
 
 class dbManager:
-
-    def __init__(self, db_config):
-        self.db_config = db_config
+    load_dotenv()
+    def __init__(self):
+        self.connection_string = os.getenv('DATABASE-URL')
         self.isOpen = False
 
         self.logger = None
@@ -15,14 +16,12 @@ class dbManager:
     def open(self):
         if self.isOpen:
             return
+        connection_pool=pool.SimpleConnectionPool(1, 2, self.connection_string)
+        if connection_pool:
+            print("Connection pool created")
+        
+        self.conn = connection_pool.getconn()
 
-        self.conn = psycopg2.connect(
-            database=self.db_config["database"],
-            user=self.db_config["user"],
-            password=self.db_config["password"],
-            host=self.db_config["host"],
-            port=self.db_config["port"],
-        )
         self.cursor = self.conn.cursor()
         self.isOpen = True
 
@@ -40,29 +39,6 @@ class dbManager:
 
         self.logger.addHandler(file_handler)
 
-    def is_locked(self, table_name: str):
-        try:
-            query = f"""
-                SELECT relation::regclass, mode
-                FROM pg_locks
-                WHERE relation::regclass = '{table_name}'::regclass
-            """
-            self.cursor.execute(query)
-            result = self.cursor.fetchall()
-
-            if len(result) > 0:
-                self.logger.info(f"{self.loggerStamp}: Table '{table_name}' is locked.")
-                return True
-            else:
-                self.logger.info(
-                    f"{self.loggerStamp}: Table '{table_name}' is not locked."
-                )
-                return False
-        except Exception as e:
-            self.logger.error(
-                f"{self.loggerStamp}: Error checking table locks for '{table_name}': {str(e)}"
-            )
-            return False
 
     def close(self):
         if not self.isOpen:
@@ -113,7 +89,6 @@ class dbManager:
             columns = ", ".join(data.keys())
             values = ", ".join(data.values())
             query = f"INSERT INTO {table_name} ({columns}) VALUES ({values});"
-            print(query)
             self.cursor.execute(query, list(data.values()))
             self.conn.commit()
             self.logger.info(f"{self.loggerStamp}: Row inserted successfully.")
