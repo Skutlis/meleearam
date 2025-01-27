@@ -9,18 +9,17 @@ class dbManager:
     def __init__(self):
         self.connection_string = os.getenv('DATABASE-URL')
         self.isOpen = False
+        self.connection_pool = self.connection_pool=pool.SimpleConnectionPool(1, 2, self.connection_string)
 
         self.logger = None
         self.open()
 
     def open(self):
-        if self.isOpen:
-            return
-        connection_pool=pool.SimpleConnectionPool(1, 2, self.connection_string)
-        if connection_pool:
-            print("Connection pool created")
+        if self.connection_pool:
+            print("Connection pool open!")
         
-        self.conn = connection_pool.getconn()
+        
+        self.conn = self.connection_pool.getconn()
 
         self.cursor = self.conn.cursor()
         self.isOpen = True
@@ -40,21 +39,22 @@ class dbManager:
         self.logger.addHandler(file_handler)
 
 
-    def close(self):
+    def release(self):
         if not self.isOpen:
             return
         try:
-            self.conn.close()
-            self.cursor.close()
-            self.logger.info(f"{self.loggerStamp}: Database connection closed.")
+            self.connection_pool.putconn(self.conn)
+            #self.cursor.close()
+            self.logger.info(f"{self.loggerStamp}: Database connection released.")
             self.isOpen = False
         except Exception as e:
             self.logger.error(
-                f"{self.loggerStamp}: Error closing database connection: {str(e)}"
+                f"{self.loggerStamp}: Error releasing database connection: {str(e)}"
             )
 
     def create_table(self, table_name: str, primary_keys: list, column_headers: dict):
-
+        if not self.isOpen:
+            self.open()
         columns = []
 
         # Add column headers to the columns list, making the primary keys primary keys
@@ -82,8 +82,12 @@ class dbManager:
                 f"{self.loggerStamp}: Error creating table '{table_name}': {str(e)}"
             )
             return False
+        finally:
+            self.release()
 
     def add_row(self, table_name: str, data: dict):
+        if not self.isOpen:
+            self.open()
 
         try:
             columns = ", ".join(data.keys())
@@ -107,9 +111,12 @@ class dbManager:
                 f"{self.loggerStamp}: Error inserting row into '{table_name}': {str(e)}"
             )
             return False
+        finally:
+            self.release()
 
     def add_rows(self, table_name: str, data_list: list[dict]):
-
+        if not self.open():
+            self.open()
         try:
             if not data_list:
                 return
@@ -140,9 +147,12 @@ class dbManager:
             )
 
             return False
+        finally:
+            self.release()
 
     def get_rows_by_criteria(self, table_name, criteria):
-
+        if not self.isOpen:
+            self.open()
         try:
             column_names = criteria.keys()
             conditions = [f"{column} = %s" for column in column_names]
@@ -164,9 +174,12 @@ class dbManager:
             )
 
             return ""
+        finally:
+            self.release()
 
     def changeColumnLength(self, table_name, column_name, new_length):
-
+        if not self.isOpen:
+            self.open()
         try:
 
             # Construct the ALTER TABLE query
@@ -185,9 +198,12 @@ class dbManager:
         except psycopg2.Error as e:
             print(f"Error: {e}")
             return False
+        finally:
+            self.release()
 
     def get_column(self, table_name: str, column: str) -> list[str]:
-
+        if not self.isOpen:
+            self.open()
         try:
             query = f"SELECT {column} FROM {table_name};"
             self.cursor.execute(query)
@@ -199,9 +215,12 @@ class dbManager:
                 f"{self.loggerStamp}: Error retrieving job IDs from '{table_name}': {str(e)}"
             )
             return []
+        finally:
+            self.release()
 
     def exists(self, table_name: str, criteria: dict) -> bool:
-
+        if not self.isOpen:
+            self.open()
         try:
             column_names = criteria.keys()
             values = criteria.values()
@@ -221,9 +240,12 @@ class dbManager:
             )
 
             return False
+        finally:
+            self.release()
 
     def delete_table(self, table_name: str):
-
+        if not self.isOpen:
+            self.open()
         try:
             query = f"DROP TABLE IF EXISTS {table_name};"
             self.cursor.execute(query)
@@ -237,9 +259,12 @@ class dbManager:
                 f"{self.loggerStamp}: Error deleting table '{table_name}': {str(e)}"
             )
             return False
+        finally:
+            self.release()
 
     def list_tables(self):
-
+        if not self.isOpen:
+            self.open()
         try:
             query = "SELECT table_name FROM information_schema.tables WHERE table_schema='public';"
             self.cursor.execute(query)
@@ -248,9 +273,12 @@ class dbManager:
         except Exception as e:
             self.logger.error(f"{self.loggerStamp}: Error listing tables: {str(e)}")
             return []
+        finally:
+            self.release()
 
     def list_rows(self, table_name: str, order_by=None):
-
+        if not self.isOpen:
+            self.open()
         try:
             # Construct the SQL query with the specified order of headers
             if order_by:
@@ -266,9 +294,12 @@ class dbManager:
                 f"{self.loggerStamp}: Error listing rows from table '{table_name}': {str(e)}"
             )
             return []
+        finally:
+            self.release()
 
     def add_column(self, table_name: str, column_name: str, column_type: str):
-
+        if not self.isOpen:
+            self.open()
         try:
             query = f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type};"
             self.cursor.execute(query)
@@ -281,8 +312,12 @@ class dbManager:
                 f"{self.loggerStamp}: Error adding column '{column_name}' to table '{table_name}': {str(e)}"
             )
 
-    def get_headers(self, table_name: str):
+        finally:
+            self.release()
 
+    def get_headers(self, table_name: str):
+        if not self.isOpen:
+            self.open()
         try:
             query = f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table_name}';"
             self.cursor.execute(query)
@@ -293,9 +328,12 @@ class dbManager:
                 f"{self.loggerStamp}: Error getting headers from table '{table_name}': {str(e)}"
             )
             return []
+        finally:
+            self.release()
 
     def delete_row(self, table_name: str, criteria: dict):
-
+        if not self.isOpen:
+            self.open()
         try:
             column_names = criteria.keys()
             values = criteria.values()
@@ -314,10 +352,14 @@ class dbManager:
             )
 
             return False
+        finally:
+            self.release()
 
     def update_column(
         self, table_name: str, criteria: dict, column_name: str, new_value
     ):
+        if not self.isOpen:
+            self.open()
 
         try:
             where = []
@@ -344,9 +386,12 @@ class dbManager:
                 f"{self.loggerStamp}: Error updating column '{column_name}' in table '{table_name}': {str(e)}"
             )
             return False
+        finally:
+            self.release()
 
     def update_row(self, table_name, criteria, new_values):
-
+        if self.isOpen:
+            self.open()
         try:
             column_names = criteria.keys()
             values = criteria.values()
@@ -365,3 +410,5 @@ class dbManager:
                 f"{self.loggerStamp}: Error updating row in table '{table_name}': {str(e)}"
             )
             return False
+        finally:
+            self.release()
