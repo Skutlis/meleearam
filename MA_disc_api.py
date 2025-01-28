@@ -28,7 +28,7 @@ async def globally_check_channel(ctx):
     return ctx.channel.id == channel_id
 
 
-# Example: Register a player with a gametag and store it in a database
+# Register a player with a gametag and store it in a database
 @bot.command(name="reg")
 async def register_player(ctx, gametag, tagline):
     discord_id = (
@@ -36,10 +36,10 @@ async def register_player(ctx, gametag, tagline):
     )  # Get the Discord ID of the person who executed the command
     discord_id = str(discord_id)
 
-    # Call your existing logic to register the player in the database
+    # Register in database
     success = lobby.register_player(
         discord_id, gametag, tagline
-    )  # Example function from your data_handler
+    ) 
 
     if success:
         await ctx.send(f"{ctx.author.name} has been registered as {gametag}#{tagline}.")
@@ -49,16 +49,17 @@ async def register_player(ctx, gametag, tagline):
         )
 
 
-# Example: Start a game and collect all members from the same voice channel
+# Start a game and collect all members from the same voice channel
 @bot.command(name="start")
 async def start_game(ctx, gamemode = "melee"):
     gamemode = gamemode.lower() 
     if gamemode not in available_gamemodes:
         await ctx.send(f"Gamemode {gamemode} is not available. Available gamemodes: {available_gamemodes}")
         return
-    # Get the voice channel of the command author
-    voice_state = ctx.author.voice  # Check if the author is in a voice channel
-
+    
+    voice_state = ctx.author.voice #Get voice channel of command author
+    
+    # Check if the author is in a voice channel
     if voice_state is None or voice_state.channel is None:
         await ctx.send("You are not in a voice channel.")
         return
@@ -85,7 +86,7 @@ async def start_game(ctx, gamemode = "melee"):
         await ctx.send(msg)
 
 
-
+# Ban a champion
 @bot.command(name="b")
 async def ban_champ(ctx, champ):
     success = lobby.ban_champ(champ)
@@ -94,7 +95,7 @@ async def ban_champ(ctx, champ):
     else:
         await ctx.send(f"{champ} is already banned.")
 
-
+# Unban a champion
 @bot.command(name="ub")
 async def unban_champ(ctx, champ):
     success = lobby.unban_champ(champ)
@@ -103,7 +104,7 @@ async def unban_champ(ctx, champ):
     else:
         await ctx.send(f"{champ} is not banned.")
 
-
+# List all banned champions
 @bot.command(name="lb")
 async def list_banned_champs(ctx):
     banned_champs = lobby.list_banned_champs()
@@ -113,12 +114,13 @@ async def list_banned_champs(ctx):
     else:
         await ctx.send("No champions are banned.")
 
+#List all available gamemodes
 @bot.command(name="modes")
 async def list_gamemodes(ctx):
     modes = ", ".join(available_gamemodes)
     await ctx.send(f"Available gamemodes: {modes}")
 
-
+# List all available commands
 @bot.command(name="commands")
 async def available_commands(ctx):
     commands = [
@@ -133,7 +135,7 @@ async def available_commands(ctx):
     command_list = "\n".join(commands)
     await ctx.send(f"Available commands:\n{command_list}")
 
-
+# List all available champs for a selected gamemode
 @bot.command(name="lc")
 async def list_champs(ctx, gamemode = "melee"):
     champs = lobby.get_champs_for_gamemode(gamemode)
